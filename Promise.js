@@ -13,13 +13,16 @@ function MyPromise(fn) {
   self.error = null;
 
   function resolve(value){
+    if(value instanceof MyPromise) {
+      value.then(resolve, reject);
+    }
     if(self.status === PENDING){
       setTimeout(()=>{
         self.status = FULFILLED;
         self.value = value;
         self.onFulfilledCallbacks.forEach(callback => {
           callback(self.value);
-        });
+        }, 0);
       })
     }
   }
@@ -31,11 +34,16 @@ function MyPromise(fn) {
         self.error = error;
         self.onRejectedCallbacks.forEach(callback => {
           callback(self.error);
-        })
+        }, 0)
       })
     }
   }
-  fn(resolve, reject);
+
+  try {
+    fn(resolve, reject);
+  } catch (error) {
+    reject(error);    
+  }
 }
 
 MyPromise.prototype.then = function(onFulfilled, onRejected) {
@@ -54,7 +62,7 @@ MyPromise.prototype.then = function(onFulfilled, onRejected) {
         } catch (error) {
           reject(error);
         }
-      })
+      }, 0)
     })
   }
   if(self.status === REJECTED) {
@@ -66,7 +74,7 @@ MyPromise.prototype.then = function(onFulfilled, onRejected) {
         } catch (error) {
           reject(error);
         }
-      })
+      }, 0)
     })
   }
   if(self.status === PENDING) {
@@ -101,15 +109,36 @@ MyPromise.prototype.catch = function (onRejected) {
 
 // 根据返回值x的类型来resolve该promise
 function resolvePromise(bridgePromise, x, resolve, reject) {
-  if(x instanceof MyPromise) {
-    if(x.status === PENDING) {
-      x.then(y => {
-        resolvePromise(bridgePromise,y,resolve,reject);
-      }, err => {
-        reject(err);
-      })
-    } else {
-      x.then(resolve, reject);
+  // 避免循环引用
+  if(x === bridgePromise) {
+    return reject(new TypeError('Circular reference'));
+  }
+
+  let called = false;
+
+  // x 为对象或者函数
+  if (x != null && ((typeof x === 'object') || (typeof x === 'function'))){
+    try{
+      // 是否为thenable对象
+      let then = x.then;
+      if (typeof then === 'function') {
+        then.call(x, y => {
+          if(called) return;
+          called = true;
+          resolvePromise(bridgePromise, y, resolve, reject);
+        }, error => {
+          if(called) return;
+          called = true;
+          reject(error);
+        })
+      } else {
+        // 非thenable对象，则以x为值进行fulfill
+        resolve(x);
+      }
+    } catch (e) {
+      if(called) return;
+      called = true;
+      reject(e);
     }
   } else {
     resolve(x);
