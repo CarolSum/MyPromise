@@ -41,3 +41,7 @@ let errorLog = function(error) {
   console.log(error)
 }
 p.then(f1).then(f2).then(f3).catch(errorLog)
+
+MyPromise.resolve('hhhhh').then(data => {
+  console.log(data);
+})

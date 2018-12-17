@@ -145,4 +145,61 @@ function resolvePromise(bridgePromise, x, resolve, reject) {
   }
 }
 
+// MyPromise.all
+MyPromise.all = function (promises) {
+  return new MyPromise((resolve, reject) => {
+    let result = [];
+    let count = 0;
+    for(let i = 0; i < promises.length; i++) {
+      promises[i].then(data => {
+        result[i] = data;
+        if(++count === promises.length) {
+          resolve(result);
+        }
+      }, err => {
+        reject(err);
+      });
+    }
+  });
+}
+
+// MyPromise.race
+MyPromise.race = function(promises) {
+  return new MyPromise((resolve, reject) => {
+    for(let i = 0; i < promises.length; i++) {
+      promises[i].then(data => {
+        resolve(data);
+      }, err => {
+        reject(err);
+      })
+    }
+  })
+}
+
+// MyPromise.resolve
+MyPromise.resolve = function(value) {
+  return new MyPromise(resolve => {
+    resolve(value);
+  })
+}
+
+// MyPromise.reject
+MyPromise.reject = function(error) {
+  return new MyPromise((resolve, reject) => {
+    reject(error);
+  })
+}
+
+// Promisify
+MyPromise.promisify = function(fn) {
+  return () => {
+    var args = Array.from(arguments);
+    return new MyPromise((resolve, reject) => {
+      fn.apply(null, args.concat((err) => {
+        err ? reject(err) : resolve(arguments[1]);
+      }));
+    })
+  }
+}
+
 module.exports = MyPromise;
