@@ -8,13 +8,17 @@ function MyPromise(fn) {
   self.error = null;
 
   function resolve(value){
-    self.value = value;
-    self.onFulfilled(self.value);
+    setTimeout(()=>{
+      self.value = value;
+      self.onFulfilled(self.value);
+    })
   }
 
   function reject(error) {
-    self.error = error;
-    self.onRejected(self.error);
+    setTimeout(() => {
+      self.error = error;
+      self.onRejected(self.error);
+    })
   }
   fn(resolve, reject);
 }
