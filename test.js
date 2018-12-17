@@ -14,4 +14,6 @@ let promise2 = new MyPromise((resolve, reject) => {
   resolve(200);
 }).then((value) => {
   console.log(value);
+}).then((value)=> {
+  console.log(value * 2);
 })
